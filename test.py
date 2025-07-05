@@ -5,6 +5,8 @@ import json # used to parse api request
 # source qb-venv/bin/activate
 # python3 -m pip install requests
 
+# deactivate
+
 print("HI")
 
 response = requests.get("http://api.open-notify.org/astros")

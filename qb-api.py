@@ -10,7 +10,7 @@ def jprint(obj):
 
 tossup = response.json()["tossups"][0]
 
-# jprint(tossup)
+jprint(tossup)
 
 print(tossup["question_sanitized"])
 print(tossup["answer_sanitized"])
