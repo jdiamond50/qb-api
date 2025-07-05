@@ -26,8 +26,8 @@ response = requests.get("https://www.qbreader.org/api/random-tossup", params = p
 if (response.status_code == 200):
     tossup = response.json()["tossups"][0]
 
-    print("------- API RESPONSE JSON -------")
-    jprint(tossup)
+    # print("------- API RESPONSE JSON -------")
+    # jprint(tossup)
 
     print("------- TOSSUP -------")
     print(tossup["question_sanitized"])
