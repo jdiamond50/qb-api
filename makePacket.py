@@ -4,7 +4,7 @@ from gtts import gTTS
 
 print("Enter Difficulties:")
 print("(ex: \"3\" OR \"4-6, 8\")")
-userResponse = input().split(", ")
+diffsUserResponse = input().split(", ")
 
 def parseDiffs(userResponse):
     diffs = []
@@ -19,32 +19,26 @@ def parseDiffs(userResponse):
                 diffs.append(i)
     return diffs
 
+def parseCats(userResponse):
+
 def jprint(obj):
     text = json.dumps(obj, sort_keys=False, indent=4)
     print(text)
 
-def getTossup(diffs):
-    params = {"difficulties" : diffs}
+def getTossups(diffs):
+    params = {"difficulties" : diffs, "number" : 3}
     response = requests.get("https://www.qbreader.org/api/random-tossup", params = params)
     if (response.status_code == 200):
-        tossup = response.json()["tossups"][0]
+        return response.json()["tossups"]
 
-        # print("------- API RESPONSE JSON -------")
-        # jprint(tossup)
-
-        tossupText = tossup["question_sanitized"]
-        answerText = tossup["answer_sanitized"]
-
-        print("Difficulty: ", tossup["difficulty"])
-        print("------- QUESTION -------")
-        print(tossup["question_sanitized"])
-        print("------- ANSWER -------")
-        print(tossup["answer_sanitized"])
-
-        audioText = tossupText + "Answer: " + answerText
-
-        audio = gTTS(text=audioText, lang="en", slow=False)
-        audio.save("tossup.mp3")
+def makePacket(tossups):
+    packetText = ""
+    for i in range(len(tossups)):
+        tossup = tossups[i]
+        tossupText = "Tossup " + str(i+1) + ": " + tossup["question_sanitized"] + "Answer: " + tossup["answer_sanitized"] + "."
+        packetText += tossupText
+    audio = gTTS(text=packetText, lang="en", slow=False)
+    audio.save("packet.mp3")
 
 diffs = parseDiffs(userResponse)
-getTossup(diffs)
+makePacket(getTossups(diffs))

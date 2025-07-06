@@ -1,3 +1,5 @@
+packet:
+	python3 makePacket.py
 api:
 	python3 qb-api.py
 qb:
