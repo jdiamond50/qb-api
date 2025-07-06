@@ -1,5 +1,6 @@
 import requests
 import json
+from gtts import gTTS
 
 print("Enter Difficulties:")
 print("(ex: \"3\" OR \"4-6, 8\")")
@@ -31,11 +32,19 @@ def getTossup(diffs):
         # print("------- API RESPONSE JSON -------")
         # jprint(tossup)
 
+        tossupText = tossup["question_sanitized"]
+        answerText = tossup["answer_sanitized"]
+
         print("Difficulty: ", tossup["difficulty"])
         print("------- QUESTION -------")
         print(tossup["question_sanitized"])
         print("------- ANSWER -------")
         print(tossup["answer_sanitized"])
+
+        audioText = tossupText + "Answer: " + answerText
+
+        audio = gTTS(text=audioText, lang="en", slow=False)
+        audio.save("tossup.mp3")
 
 diffs = parseDiffs(userResponse)
 getTossup(diffs)
