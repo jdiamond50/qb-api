@@ -1,4 +1,4 @@
-qb:
+api:
 	python3 qb-api.py
-diff:
+qb:
 	python3 getTossupDiff.py
