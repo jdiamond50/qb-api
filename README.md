@@ -6,5 +6,6 @@ A project to explore the functionality of APIs using the QBReader database by co
 Create a packet with `make packet`. You will be prompted for the difficulties, categories, and number of questions.
 
 ## Flags
-Flags may be used to change the output of the program. Add flags using `make packet ARGS="<flags>"\
-&emsp;**-v** or **--verbose** &emsp;&emsp; enables verbose mode
+Flags may be used to change the output of the program. Add flags using `make packet ARGS="<flags>`\
+&emsp;**-v** or **--verbose** &emsp;&emsp; enables verbose mode\
+&emsp;**-s** or **--slow** &emsp;&emsp;&emsp;&ensp;&nbsp; enables slow reading mode
