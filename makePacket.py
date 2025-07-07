@@ -11,7 +11,7 @@ print("(ex: \"Literature\" or \"Philosophy, Science\")")
 catsUserResponse = input().split(", ")
 
 print("Enter number of Questions")
-print("ex: \"2\" or \"7\"")
+print("(ex: \"2\" or \"7\")")
 numTossups = int(input())
 
 def parseDiffs(userResponse):
