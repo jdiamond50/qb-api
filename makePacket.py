@@ -1,7 +1,13 @@
+import sys
 import requests
 import json
 from gtts import gTTS
 from pydub import AudioSegment
+
+isVerbose = False
+
+for i in range(1, len(sys.argv)):
+    if (sys.argv[i] == "-v" or sys.argv[i] == "--verbose"): isVerbose = True
 
 # python3 -m venv qb-venv
 # source qb-venv/bin/activate
@@ -50,7 +56,10 @@ def getTossups(numTossups, diffs, cats): # gets list of tossups from QBReader AP
     params = {"number" : numTossups, "difficulties" : diffs, "categories" : cats}
     response = requests.get("https://www.qbreader.org/api/random-tossup", params = params)
     if (response.status_code == 200):
+        if (isVerbose): print("tossups received from QBReader")
         return response.json()["tossups"]
+    else:
+        raise Exception("Error in retrieving tossups\n Error code " + str(response.status_code))
 
 def makePacket(tossups): # converts list of tossups into audio file
     packetAudio = AudioSegment.silent(duration=1)
@@ -74,6 +83,8 @@ def makePacket(tossups): # converts list of tossups into audio file
 
         # concatenating all audio together for each tossup and adding onto the packet
         packetAudio = packetAudio + introTossupAudio + tossupAudio + five_sec_pause + introAnswerAudio + answerAudio
+
+        if (isVerbose): print("tossup " + str(i+1) + " added to packet")
 
     packetAudio.export("packet.mp3", format="mp3")
 
