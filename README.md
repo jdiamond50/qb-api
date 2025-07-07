@@ -1,3 +1,3 @@
 # qb-api
 
-A project to explore the functionality of APIs using the QBReader database, with the end goal being to read the questions aloud via text-to-speech.
+A project to explore the functionality of APIs using the QBReader database by compiling a packet of tossups to be read aloud via text-to-speech.
