@@ -26,11 +26,11 @@ numTossups = int(input())
 def parseDiffs(userResponse):
     diffs = []
     for val in userResponse:
-        try:
+        try: #
             index = val.index("-")
-        except:
+        except: # if single number
             diffs.append(int(val))
-        else:
+        else: # if range
             diffRange = val.split("-")
             for i in range(int(diffRange[0]), int(diffRange[1])+1):
                 diffs.append(i)
@@ -42,18 +42,20 @@ def parseCats(userResponse):
         cats.append(cat)
     return cats
 
-def jprint(obj):
+def jprint(obj): # pretty print json object
     text = json.dumps(obj, sort_keys=False, indent=4)
     print(text)
 
-def getTossups(numTossups, diffs, cats):
+def getTossups(numTossups, diffs, cats): # gets list of tossups from QBReader API
     params = {"number" : numTossups, "difficulties" : diffs, "categories" : cats}
     response = requests.get("https://www.qbreader.org/api/random-tossup", params = params)
     if (response.status_code == 200):
         return response.json()["tossups"]
 
-def makePacket(tossups):
+def makePacket(tossups): # converts list of tossups into audio file
     packetAudio = AudioSegment.silent(duration=1)
+
+    # same audio segments for all tossups
     five_sec_pause = AudioSegment.silent(duration=5000)
     introAnswerGTTS = gTTS(text = "Answer:", lang="en", slow=False).save("introAnswer.mp3")
     introAnswerAudio = AudioSegment.from_mp3("introAnswer.mp3")
@@ -61,6 +63,7 @@ def makePacket(tossups):
     for i in range(len(tossups)):
         tossup = tossups[i]
 
+        # audio segments that are unique to each tossup
         introTossupGTTS = gTTS(text = ("Tossup " + str(i+1)), lang="en", slow=False).save("introTossup.mp3")
         tossupGTTS = gTTS(text = tossup["question_sanitized"], lang="en", slow=False).save("tossup.mp3")
         answerGTTS = gTTS(text = tossup["answer_sanitized"], lang="en", slow=False).save("answer.mp3")
@@ -69,6 +72,7 @@ def makePacket(tossups):
         tossupAudio = AudioSegment.from_mp3("tossup.mp3")
         answerAudio = AudioSegment.from_mp3("answer.mp3")
 
+        # concatenating all audio together for each tossup and adding onto the packet
         packetAudio = packetAudio + introTossupAudio + tossupAudio + five_sec_pause + introAnswerAudio + answerAudio
 
     packetAudio.export("packet.mp3", format="mp3")
