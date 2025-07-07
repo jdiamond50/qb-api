@@ -3,6 +3,11 @@ import json
 from gtts import gTTS
 from pydub import AudioSegment
 
+# python3 -m venv qb-venv
+# source qb-venv/bin/activate
+
+# pip install requests
+# pip install gTTS
 # pip install pydub
 # brew install ffmpeg
 
