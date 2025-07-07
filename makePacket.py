@@ -77,7 +77,9 @@ def makePacket(tossups): # converts list of tossups into audio file
         # audio segments that are unique to each tossup
         introTossupGTTS = gTTS(text = ("Tossup " + str(i+1)), lang="en", slow=isSlow).save("introTossup.mp3")
         tossupGTTS = gTTS(text = tossup["question_sanitized"], lang="en", slow=isSlow).save("tossup.mp3")
+        if (isVerbose): print("created question " + str(i+1) + " audio")
         answerGTTS = gTTS(text = tossup["answer_sanitized"], lang="en", slow=isSlow).save("answer.mp3")
+        if (isVerbose): print("created answer " + str(i+1) + " audio")
 
         introTossupAudio = AudioSegment.from_mp3("introTossup.mp3")
         tossupAudio = AudioSegment.from_mp3("tossup.mp3")
