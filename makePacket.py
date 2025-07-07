@@ -1,6 +1,10 @@
 import requests
 import json
 from gtts import gTTS
+from pydub import AudioSegment
+
+# pip install pydub
+# brew install ffmpeg
 
 print("Enter Difficulties:")
 print("(ex: \"3\" OR \"4-6, 8\")")
@@ -44,13 +48,25 @@ def getTossups(numTossups, diffs, cats):
         return response.json()["tossups"]
 
 def makePacket(tossups):
-    packetText = ""
+    packetAudio = AudioSegment.silent(duration=1)
+    five_sec_pause = AudioSegment.silent(duration=5000)
+    introAnswerGTTS = gTTS(text = "Answer:", lang="en", slow=False).save("introAnswer.mp3")
+    introAnswerAudio = AudioSegment.from_mp3("introAnswer.mp3")
+
     for i in range(len(tossups)):
         tossup = tossups[i]
-        tossupText = "Tossup " + str(i+1) + ": " + tossup["question_sanitized"] + "Answer: " + tossup["answer_sanitized"] + "."
-        packetText += tossupText
-    audio = gTTS(text=packetText, lang="en", slow=False)
-    audio.save("packet.mp3")
+
+        introTossupGTTS = gTTS(text = ("Tossup " + str(i+1)), lang="en", slow=False).save("introTossup.mp3")
+        tossupGTTS = gTTS(text = tossup["question_sanitized"], lang="en", slow=False).save("tossup.mp3")
+        answerGTTS = gTTS(text = tossup["answer_sanitized"], lang="en", slow=False).save("answer.mp3")
+
+        introTossupAudio = AudioSegment.from_mp3("introTossup.mp3")
+        tossupAudio = AudioSegment.from_mp3("tossup.mp3")
+        answerAudio = AudioSegment.from_mp3("answer.mp3")
+
+        packetAudio = packetAudio + introTossupAudio + tossupAudio + five_sec_pause + introAnswerAudio + answerAudio
+
+    packetAudio.export("packet.mp3", format="mp3")
 
 diffs = parseDiffs(diffsUserResponse)
 cats = parseCats(catsUserResponse)
