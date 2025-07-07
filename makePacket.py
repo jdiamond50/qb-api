@@ -5,9 +5,11 @@ from gtts import gTTS
 from pydub import AudioSegment
 
 isVerbose = False
+isSlow = False
 
 for i in range(1, len(sys.argv)):
     if (sys.argv[i] == "-v" or sys.argv[i] == "--verbose"): isVerbose = True
+    if (sys.argv[i] == "-s" or sys.argv[i] == "--slow"): isSlow = True
 
 # python3 -m venv qb-venv
 # source qb-venv/bin/activate
@@ -66,16 +68,16 @@ def makePacket(tossups): # converts list of tossups into audio file
 
     # same audio segments for all tossups
     five_sec_pause = AudioSegment.silent(duration=5000)
-    introAnswerGTTS = gTTS(text = "Answer:", lang="en", slow=False).save("introAnswer.mp3")
+    introAnswerGTTS = gTTS(text = "Answer:", lang="en", slow=isSlow).save("introAnswer.mp3")
     introAnswerAudio = AudioSegment.from_mp3("introAnswer.mp3")
 
     for i in range(len(tossups)):
         tossup = tossups[i]
 
         # audio segments that are unique to each tossup
-        introTossupGTTS = gTTS(text = ("Tossup " + str(i+1)), lang="en", slow=False).save("introTossup.mp3")
-        tossupGTTS = gTTS(text = tossup["question_sanitized"], lang="en", slow=False).save("tossup.mp3")
-        answerGTTS = gTTS(text = tossup["answer_sanitized"], lang="en", slow=False).save("answer.mp3")
+        introTossupGTTS = gTTS(text = ("Tossup " + str(i+1)), lang="en", slow=isSlow).save("introTossup.mp3")
+        tossupGTTS = gTTS(text = tossup["question_sanitized"], lang="en", slow=isSlow).save("tossup.mp3")
+        answerGTTS = gTTS(text = tossup["answer_sanitized"], lang="en", slow=isSlow).save("answer.mp3")
 
         introTossupAudio = AudioSegment.from_mp3("introTossup.mp3")
         tossupAudio = AudioSegment.from_mp3("tossup.mp3")
