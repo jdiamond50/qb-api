@@ -5,9 +5,14 @@ from gtts import gTTS
 print("Enter Difficulties:")
 print("(ex: \"3\" OR \"4-6, 8\")")
 diffsUserResponse = input().split(", ")
+
 print("Enter Categories:")
 print("(ex: \"Literature\" or \"Philosophy, Science\")")
 catsUserResponse = input().split(", ")
+
+print("Enter number of Questions")
+print("ex: \"2\" or \"7\"")
+numTossups = int(input())
 
 def parseDiffs(userResponse):
     diffs = []
@@ -32,8 +37,8 @@ def jprint(obj):
     text = json.dumps(obj, sort_keys=False, indent=4)
     print(text)
 
-def getTossups(diffs, cats):
-    params = {"number" : 3, "difficulties" : diffs, "categories" : cats}
+def getTossups(numTossups, diffs, cats):
+    params = {"number" : numTossups, "difficulties" : diffs, "categories" : cats}
     response = requests.get("https://www.qbreader.org/api/random-tossup", params = params)
     if (response.status_code == 200):
         return response.json()["tossups"]
@@ -49,4 +54,4 @@ def makePacket(tossups):
 
 diffs = parseDiffs(diffsUserResponse)
 cats = parseCats(catsUserResponse)
-makePacket(getTossups(diffs, cats))
+makePacket(getTossups(numTossups, diffs, cats))
