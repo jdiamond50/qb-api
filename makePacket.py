@@ -68,9 +68,8 @@ def makePacket(tossups): # converts list of tossups into audio file
 
     # same audio segments for all tossups
     five_sec_pause = AudioSegment.silent(duration=5000)
-    introAnswerGTTS = gTTS(text = "Answer:", lang="en", slow=isSlow).save("introAnswer.mp3")
-    introAnswerAudio = AudioSegment.from_mp3("introAnswer.mp3")
-    powermarkAudio = AudioSegment.from_mp3("ding.mp3")
+    introAnswerAudio = AudioSegment.from_mp3("audio/introAnswer.mp3")
+    powermarkAudio = AudioSegment.from_mp3("audio/ding.mp3")
 
     for i in range(len(tossups)):
         tossup = tossups[i]
