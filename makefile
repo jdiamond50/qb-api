@@ -5,4 +5,4 @@ api:
 qb:
 	@python3 getTossupDiff.py
 clean:
-	@rm *.mp3
+	@rm -f introTossup.mp3 tossupStart.mp3 tossupEnd.mp3 answer.mp3 packet.mp3
