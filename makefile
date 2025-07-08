@@ -1,3 +1,5 @@
+reader:
+	@python3 reader.py
 packet:
 	@python3 makePacket.py $(ARGS)
 api:
