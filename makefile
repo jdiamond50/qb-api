@@ -9,4 +9,4 @@ qb:
 gui:
 	@python3 testing/guiTest.py
 clean:
-	@rm -f introTossup.mp3 tossupStart.mp3 tossupEnd.mp3 answer.mp3 packet.mp3
+	@rm -f introTossup.mp3 tossupStart.mp3 tossupEnd.mp3 answer.mp3 packet.mp3 currTossup.mp3

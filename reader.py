@@ -30,11 +30,17 @@ ding = mixer.Sound("audio/ding.mp3")
 # defaults
 diffs = [3, 4, 5]
 
+def jprint(obj): # pretty print json object
+    text = json.dumps(obj, sort_keys=False, indent=4)
+    print(text)
+
 def getTossup(diffs): # gets list of tossups from QBReader API
-    params = {"difficulties" : diffs, "powermarkOnly" : "true"}
+    global tossupAnswer;
+    params = {"difficulties" : diffs, "powermarkOnly" : "true", "categories" : "Science"}
     response = requests.get("https://www.qbreader.org/api/random-tossup", params = params)
     if (response.status_code == 200):
         if (isVerbose): print("tossup received from QBReader")
+        tossupAnswer = response.json()["tossups"][0]["answer"]
         return response.json()["tossups"][0]
     else:
         raise Exception("Error in retrieving tossups\n Error code " + str(response.status_code))
@@ -61,6 +67,12 @@ def tossupToMP3(tossup):
     tossupAudio.export("currTossup.mp3", format="mp3")
     if (isVerbose): print("tossup exported as mp3")
 
+def checkAnswer(answerline, givenAnswer):
+    print("answerline: ", answerline)
+    print("givenAnswer: ", givenAnswer)
+    params = {"answerline" : answerline, "givenAnswer" : givenAnswer}
+    return requests.get("https://www.qbreader.org/api/check-answer", params = params).json()
+
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
     event, values = window.read()
@@ -75,22 +87,29 @@ while True:
         mixer.music.load("currTossup.mp3")
         gameStatus = MID_QUESTION
         mixer.music.play(0)
+
     if (event == "Buzz" and gameStatus == MID_QUESTION):
         print("Buzz Pressed")
         gameStatus = BUZZED
         ding.play()
         mixer.music.pause()
+
     if (event == "Submit" and gameStatus == BUZZED):
         print("Submit pressed")
-        print("answer: ", values[0])
-        if (values[0] == "correct"):
-            print("answer is correct")
+        responseEvaluation = checkAnswer(tossupAnswer, values[0])
+        jprint(responseEvaluation)
+        if (responseEvaluation["directive"] == "accept"):
+            print("correct answer")
             gameStatus = PRE_QUESTION
-        else:
-            print("answer is incorrect")
-            mixer.music.unpause()
+        if (responseEvaluation["directive"] == "reject"):
+            print("incorrect answer")
             gameStatus = MID_QUESTION
-
+            mixer.music.unpause()
+        if (responseEvaluation["directive"] == "prompt"):
+            try:
+                print("Prompt: ", responseEvaluation["directedPrompt"])
+            except:
+                print("Prompt")
     if event == sg.WIN_CLOSED or event == 'Quit':
         break
 
