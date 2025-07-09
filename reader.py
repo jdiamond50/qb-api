@@ -26,7 +26,8 @@ layout = [  [sg.Text('Quiz Bowl Question Reader')],
 window = sg.Window('QBReaderReader', layout)
 
 mixer.init()
-ding = mixer.Sound("audio/ding.mp3")
+correctSound = mixer.Sound("audio/correct.mp3")
+incorrectSound = mixer.Sound("audio/incorrect.mp3")
 
 # defaults
 diffs = [2]
@@ -115,7 +116,6 @@ while True:
     if (event == "Buzz" and gameStatus == MID_QUESTION):
         print("(button) buzz registered")
         gameStatus = BUZZED
-        ding.play()
         mixer.music.pause()
 
     # submit button
@@ -129,12 +129,14 @@ while True:
         # correct response
         if (responseEvaluation["directive"] == "accept"):
             if (isVerbose): print("correct answer provided")
+            correctSound.play()
             changeInstruction("Correct!")
             window["answer"].update("Answer: " + tossupAnswer_sanitized)
             gameStatus = PRE_QUESTION
         # incorrect response
         if (responseEvaluation["directive"] == "reject"):
             if (isVerbose): print("incorrect answer")
+            incorrectSound.play()
             changeInstruction("Enter answer:")
             gameStatus = MID_QUESTION
             mixer.music.unpause()
