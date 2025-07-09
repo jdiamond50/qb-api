@@ -1,4 +1,4 @@
-import PySimpleGUI as sg
+import FreeSimpleGUI as sg
 from pygame import mixer
 import sys
 import requests
@@ -6,7 +6,7 @@ import json
 from gtts import gTTS
 from pydub import AudioSegment
 
-# pip install --upgrade --extra-index-url https://PySimpleGUI.net/install PySimpleGUI
+# pip install FreeSimpleGUI
 # pip install pygame
 
 isVerbose = True
@@ -20,7 +20,8 @@ gameStatus = PRE_QUESTION
 
 layout = [  [sg.Text('Quiz Bowl Question Reader')],
             [sg.Button('Play Question'), sg.Button('Buzz'), sg.Button('Quit')],
-            [sg.Text('Enter answer:', key='instruction'), sg.InputText(do_not_clear=False), sg.Button('Submit')]]
+            [sg.Text('Enter answer:', key='instruction'), sg.InputText(do_not_clear=True, key="input"), sg.Button('Submit')],
+            [sg.Text("", key = "answer")]]
 
 window = sg.Window('QBReaderReader', layout)
 
@@ -36,12 +37,14 @@ def jprint(obj): # pretty print json object
     print(text)
 
 def getTossup(diffs): # gets list of tossups from QBReader API
-    global tossupAnswer;
+    global tossupAnswer, tossupAnswer_sanitized;
     params = {"difficulties" : diffs, "powermarkOnly" : "true", "categories" : cats}
     response = requests.get("https://www.qbreader.org/api/random-tossup", params = params)
     if (response.status_code == 200):
         if (isVerbose): print("tossup received from QBReader")
-        tossupAnswer = response.json()["tossups"][0]["answer"]
+        tossup = response.json()["tossups"][0]
+        tossupAnswer = tossup["answer"]
+        tossupAnswer_sanitized = tossup["answer_sanitized"]
         return response.json()["tossups"][0]
     else:
         raise Exception("Error in retrieving tossups\n Error code " + str(response.status_code))
@@ -54,8 +57,8 @@ def tossupToMP3(tossup):
     # audio segments that are unique to each tossup
     tossupParts = tossup["question_sanitized"].split("(*)")
     if (len(tossupParts) == 1): tossupParts = tossup["question_sanitized"].split("[*]")
-    tossupStartGTTS = gTTS(text = tossupParts[0], lang="en", slow="false").save("tossupStart.mp3")
-    tossupEndGTTS = gTTS(text = tossupParts[1], lang="en", slow="false").save("tossupEnd.mp3")
+    tossupStartGTTS = gTTS(text = tossupParts[0], lang="en", slow=False).save("tossupStart.mp3")
+    tossupEndGTTS = gTTS(text = tossupParts[1], lang="en", slow=False).save("tossupEnd.mp3")
 
     tossupStartAudio = AudioSegment.from_mp3("tossupStart.mp3")
     tossupEndAudio = AudioSegment.from_mp3("tossupEnd.mp3")
@@ -79,14 +82,30 @@ def checkAnswer(answerline, givenAnswer):
 def changeInstruction(str):
     window["instruction"].update(str)
 
+def tossupPlaying():
+    if (gameStatus == MID_QUESTION and not mixer.music.get_busy()): return False
+    return True
+
+def displayAnswer():
+    if (isVerbose): print("tossupOver() called")
+    window["answer"].update("Answer: " + tossupAnswer_sanitized)
+
+timeoutDuration = 100
+
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
-    event, values = window.read()
+
+    event, values = window.read(timeout = timeoutDuration)
+
+    if (not tossupPlaying()):
+        displayAnswer()
+        gameStatus = PRE_QUESTION
 
     # play question button
     if (event == "Play Question" and gameStatus == PRE_QUESTION):
         print("(button) play question registered")
         changeInstruction("Enter answer:")
+        window["answer"].update("")
         tossupToMP3(getTossup(diffs))
         mixer.music.load("currTossup.mp3")
         gameStatus = MID_QUESTION
@@ -100,18 +119,23 @@ while True:
         mixer.music.pause()
 
     # submit button
-    if (event == "Submit" and gameStatus == BUZZED):
+    if (event == "Submit" and gameStatus == BUZZED and len(values) > 0):
         print("(button) submit registered")
-        responseEvaluation = checkAnswer(tossupAnswer, values[0])
+        print("values: ", values)
+        print("values['input']: ", values["input"])
+        window["input"].update("")
+        responseEvaluation = checkAnswer(tossupAnswer, values["input"])
         if (isVerbose): jprint(responseEvaluation)
         # correct response
         if (responseEvaluation["directive"] == "accept"):
             if (isVerbose): print("correct answer provided")
             changeInstruction("Correct!")
+            window["answer"].update("Answer: " + tossupAnswer_sanitized)
             gameStatus = PRE_QUESTION
         # incorrect response
         if (responseEvaluation["directive"] == "reject"):
             if (isVerbose): print("incorrect answer")
+            changeInstruction("Enter answer:")
             gameStatus = MID_QUESTION
             mixer.music.unpause()
         # prompted response
