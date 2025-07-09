@@ -5,6 +5,7 @@ import requests
 import json
 from gtts import gTTS
 from pydub import AudioSegment
+from threading import Thread
 
 # pip install FreeSimpleGUI
 # pip install pygame
@@ -39,14 +40,14 @@ def jprint(obj): # pretty print json object
     print(text)
 
 def getTossup(diffs): # gets list of tossups from QBReader API
-    global tossupAnswer, tossupAnswer_sanitized;
+    global nextTossupAnswer, nextTossupAnswer_sanitized;
     params = {"difficulties" : diffs, "powermarkOnly" : "true", "categories" : cats}
     response = requests.get("https://www.qbreader.org/api/random-tossup", params = params)
     if (response.status_code == 200):
         if (isVerbose): print("tossup received from QBReader")
         tossup = response.json()["tossups"][0]
-        tossupAnswer = tossup["answer"]
-        tossupAnswer_sanitized = tossup["answer_sanitized"]
+        nextTossupAnswer = tossup["answer"]
+        nextTossupAnswer_sanitized = tossup["answer_sanitized"]
         return tossup
     else:
         raise Exception("Error in retrieving tossups\n Error code " + str(response.status_code))
@@ -69,7 +70,33 @@ def tossupToMP3(tossup):
     # concatenating all audio together for each tossup and adding onto the packet
     tossupAudio = tossupStartAudio + powermarkAudio + tossupEndAudio + five_sec_pause
     if (isVerbose): print("tossup concatenated")
+    tossupAudio.export("currTossup.mp3", format="mp3")
+    if (isVerbose): print("tossup exported as mp3")
 
+def createTossupAudio(tossup):
+    global tossupAudio
+
+    # segments that are the same for each tossupParts
+    powermarkAudio = AudioSegment.from_mp3("audio/ding.mp3")
+    five_sec_pause = AudioSegment.silent(duration=5000)
+
+    # audio segments that are unique to each tossup
+    tossupParts = tossup["question_sanitized"].split("(*)")
+    if (len(tossupParts) == 1): tossupParts = tossup["question_sanitized"].split("[*]")
+    tossupStartGTTS = gTTS(text = tossupParts[0], lang="en", slow=False).save("tossupStart.mp3")
+    tossupEndGTTS = gTTS(text = tossupParts[1], lang="en", slow=False).save("tossupEnd.mp3")
+
+    tossupStartAudio = AudioSegment.from_mp3("tossupStart.mp3")
+    tossupEndAudio = AudioSegment.from_mp3("tossupEnd.mp3")
+    if (isVerbose): print("tossup audio parts created")
+
+    # concatenating all audio together for each tossup and adding onto the packet
+    tossupAudio = tossupStartAudio + powermarkAudio + tossupEndAudio + five_sec_pause
+
+def finalizeTossup(tossup):
+    global tossupAnswer, tossupAnswer_sanitized
+    tossupAnswer = nextTossupAnswer
+    tossupAnswer_sanitized = nextTossupAnswer_sanitized
     tossupAudio.export("currTossup.mp3", format="mp3")
     if (isVerbose): print("tossup exported as mp3")
 
@@ -94,12 +121,16 @@ def displayAnswer():
 
 timeoutDuration = 100
 
+createTossupAudio(getTossup(diffs))
+
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
 
     event, values = window.read(timeout = timeoutDuration)
 
     if (not tossupPlaying()):
+        print("gameStatus: ", gameStatus)
+        print("mixer.music.get_busy(): ", mixer.music.get_busy())
         displayAnswer()
         gameStatus = PRE_QUESTION
 
@@ -108,10 +139,14 @@ while True:
         print("(button) play question registered")
         changeInstruction("Enter answer:")
         window["answer"].update("")
-        tossupToMP3(getTossup(diffs))
+        # tossupToMP3(getTossup(diffs))
+        finalizeTossup(tossupAudio)
         mixer.music.load("currTossup.mp3")
         gameStatus = MID_QUESTION
         mixer.music.play(0)
+        # thread = Thread(target=createTossupAudio(getTossup(diffs)))
+        # thread.start()
+        createTossupAudio(getTossup(diffs))
 
     # buzz button
     if (event == "Buzz" and gameStatus == MID_QUESTION):
