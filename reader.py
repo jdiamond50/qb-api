@@ -20,7 +20,8 @@ gameStatus = PRE_QUESTION
 
 layout = [  [sg.Text('Quiz Bowl Question Reader')],
             [sg.Button('Play Question'), sg.Button('Buzz'), sg.Button('Quit')],
-            [sg.Text('Enter answer:', key='instruction'), sg.InputText(do_not_clear=True, key="input"), sg.Button('Submit')],
+            [sg.Text('Enter answer:', key='instruction')],
+            [sg.InputText(do_not_clear=True, key="input"), sg.Button('Submit')],
             [sg.Text("", key = "answer")]]
 
 window = sg.Window('QBReaderReader', layout)
@@ -46,7 +47,7 @@ def getTossup(diffs): # gets list of tossups from QBReader API
         tossup = response.json()["tossups"][0]
         tossupAnswer = tossup["answer"]
         tossupAnswer_sanitized = tossup["answer_sanitized"]
-        return response.json()["tossups"][0]
+        return tossup
     else:
         raise Exception("Error in retrieving tossups\n Error code " + str(response.status_code))
 
