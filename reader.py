@@ -20,7 +20,7 @@ gameStatus = PRE_QUESTION
 
 layout = [  [sg.Text('Quiz Bowl Question Reader')],
             [sg.Button('Play Question'), sg.Button('Buzz'), sg.Button('Quit')],
-            [sg.Text('Enter answer here'), sg.InputText(do_not_clear=False), sg.Button('Submit')]]
+            [sg.Text('Enter answer:', key='instruction'), sg.InputText(do_not_clear=False), sg.Button('Submit')]]
 
 window = sg.Window('QBReaderReader', layout)
 
@@ -28,7 +28,8 @@ mixer.init()
 ding = mixer.Sound("audio/ding.mp3")
 
 # defaults
-diffs = [3, 4, 5]
+diffs = [2]
+cats = "Science"
 
 def jprint(obj): # pretty print json object
     text = json.dumps(obj, sort_keys=False, indent=4)
@@ -36,7 +37,7 @@ def jprint(obj): # pretty print json object
 
 def getTossup(diffs): # gets list of tossups from QBReader API
     global tossupAnswer;
-    params = {"difficulties" : diffs, "powermarkOnly" : "true", "categories" : "Science"}
+    params = {"difficulties" : diffs, "powermarkOnly" : "true", "categories" : cats}
     response = requests.get("https://www.qbreader.org/api/random-tossup", params = params)
     if (response.status_code == 200):
         if (isVerbose): print("tossup received from QBReader")
@@ -68,49 +69,60 @@ def tossupToMP3(tossup):
     if (isVerbose): print("tossup exported as mp3")
 
 def checkAnswer(answerline, givenAnswer):
-    print("answerline: ", answerline)
-    print("givenAnswer: ", givenAnswer)
+    if (isVerbose):
+        print("response evaluation:")
+        print("answerline: ", answerline)
+        print("givenAnswer: ", givenAnswer)
     params = {"answerline" : answerline, "givenAnswer" : givenAnswer}
     return requests.get("https://www.qbreader.org/api/check-answer", params = params).json()
+
+def changeInstruction(str):
+    window["instruction"].update(str)
 
 # Event Loop to process "events" and get the "values" of the inputs
 while True:
     event, values = window.read()
 
-    print("event: ", event)
-    print("values: ", values)
-
-    # on button pressed
+    # play question button
     if (event == "Play Question" and gameStatus == PRE_QUESTION):
-        print("Play Question pressed")
+        print("(button) play question registered")
+        changeInstruction("Enter answer:")
         tossupToMP3(getTossup(diffs))
         mixer.music.load("currTossup.mp3")
         gameStatus = MID_QUESTION
         mixer.music.play(0)
 
+    # buzz button
     if (event == "Buzz" and gameStatus == MID_QUESTION):
-        print("Buzz Pressed")
+        print("(button) buzz registered")
         gameStatus = BUZZED
         ding.play()
         mixer.music.pause()
 
+    # submit button
     if (event == "Submit" and gameStatus == BUZZED):
-        print("Submit pressed")
+        print("(button) submit registered")
         responseEvaluation = checkAnswer(tossupAnswer, values[0])
-        jprint(responseEvaluation)
+        if (isVerbose): jprint(responseEvaluation)
+        # correct response
         if (responseEvaluation["directive"] == "accept"):
-            print("correct answer")
+            if (isVerbose): print("correct answer provided")
+            changeInstruction("Correct!")
             gameStatus = PRE_QUESTION
+        # incorrect response
         if (responseEvaluation["directive"] == "reject"):
-            print("incorrect answer")
+            if (isVerbose): print("incorrect answer")
             gameStatus = MID_QUESTION
             mixer.music.unpause()
+        # prompted response
         if (responseEvaluation["directive"] == "prompt"):
             try:
-                print("Prompt: ", responseEvaluation["directedPrompt"])
+                if (isVerbose): print("promted with direction ", responseEvaluation["directedPrompt"])
+                changeInstruction("Prompt: " + responseEvaluation["directedPrompt"])
             except:
-                print("Prompt")
+                if (isVerbose): print("prompted")
+                changeInstruction("Prompt:")
+
+    # close reader
     if event == sg.WIN_CLOSED or event == 'Quit':
         break
-
-    # print('You entered ', values[0])
