@@ -10,7 +10,12 @@ from threading import Thread
 # pip install FreeSimpleGUI
 # pip install pygame
 
-isVerbose = True
+isVerbose = False
+isSlow = False
+
+for i in range(1, len(sys.argv)):
+    if (sys.argv[i] == "-v" or sys.argv[i] == "--verbose"): isVerbose = True
+    if (sys.argv[i] == "-s" or sys.argv[i] == "--slow"): isSlow = True
 
 # game status
 PRE_QUESTION = 0
@@ -60,8 +65,8 @@ def tossupToMP3(tossup):
     # audio segments that are unique to each tossup
     tossupParts = tossup["question_sanitized"].split("(*)")
     if (len(tossupParts) == 1): tossupParts = tossup["question_sanitized"].split("[*]")
-    tossupStartGTTS = gTTS(text = tossupParts[0], lang="en", slow=False).save("tossupStart.mp3")
-    tossupEndGTTS = gTTS(text = tossupParts[1], lang="en", slow=False).save("tossupEnd.mp3")
+    tossupStartGTTS = gTTS(text = tossupParts[0], lang="en", slow=isSlow).save("tossupStart.mp3")
+    tossupEndGTTS = gTTS(text = tossupParts[1], lang="en", slow=isSlow).save("tossupEnd.mp3")
 
     tossupStartAudio = AudioSegment.from_mp3("tossupStart.mp3")
     tossupEndAudio = AudioSegment.from_mp3("tossupEnd.mp3")
@@ -83,8 +88,8 @@ def createTossupAudio(tossup):
     # audio segments that are unique to each tossup
     tossupParts = tossup["question_sanitized"].split("(*)")
     if (len(tossupParts) == 1): tossupParts = tossup["question_sanitized"].split("[*]")
-    tossupStartGTTS = gTTS(text = tossupParts[0], lang="en", slow=False).save("tossupStart.mp3")
-    tossupEndGTTS = gTTS(text = tossupParts[1], lang="en", slow=False).save("tossupEnd.mp3")
+    tossupStartGTTS = gTTS(text = tossupParts[0], lang="en", slow=isSlow).save("tossupStart.mp3")
+    tossupEndGTTS = gTTS(text = tossupParts[1], lang="en", slow=isSlow).save("tossupEnd.mp3")
 
     tossupStartAudio = AudioSegment.from_mp3("tossupStart.mp3")
     tossupEndAudio = AudioSegment.from_mp3("tossupEnd.mp3")
@@ -129,14 +134,12 @@ while True:
     event, values = window.read(timeout = timeoutDuration)
 
     if (not tossupPlaying()):
-        print("gameStatus: ", gameStatus)
-        print("mixer.music.get_busy(): ", mixer.music.get_busy())
         displayAnswer()
         gameStatus = PRE_QUESTION
 
     # play question button
     if (event == "Play Question" and gameStatus == PRE_QUESTION):
-        print("(button) play question registered")
+        if (isVerbose): print("(button) play question registered")
         changeInstruction("Enter answer:")
         window["answer"].update("")
         # tossupToMP3(getTossup(diffs))
@@ -150,15 +153,13 @@ while True:
 
     # buzz button
     if (event == "Buzz" and gameStatus == MID_QUESTION):
-        print("(button) buzz registered")
+        if (isVerbose): print("(button) buzz registered")
         gameStatus = BUZZED
         mixer.music.pause()
 
     # submit button
     if (event == "Submit" and gameStatus == BUZZED and len(values) > 0):
-        print("(button) submit registered")
-        print("values: ", values)
-        print("values['input']: ", values["input"])
+        if (isVerbose): print("(button) submit registered")
         window["input"].update("")
         responseEvaluation = checkAnswer(tossupAnswer, values["input"])
         if (isVerbose): jprint(responseEvaluation)
