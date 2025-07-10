@@ -4,6 +4,7 @@ A project to explore the functionality of APIs using the QBReader database by co
 
 # Running the Program
 Create a packet with `make packet`. You will be prompted for the difficulties, categories, and number of questions.
+Run the question reader with `make reader`.
 
 ## Flags
 Flags may be used to change the output of the program. Add flags using `make packet ARGS="<flags>`\
