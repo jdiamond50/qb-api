@@ -5,7 +5,7 @@ import requests
 import json
 from gtts import gTTS
 from pydub import AudioSegment
-from threading import Thread
+import multiprocessing
 
 # pip install FreeSimpleGUI
 # pip install pygame
@@ -81,6 +81,8 @@ def tossupToMP3(tossup):
 def createTossupAudio(tossup):
     global tossupAudio
 
+    if (isVerbose): print("createTossupAudio called")
+
     # segments that are the same for each tossupParts
     powermarkAudio = AudioSegment.from_mp3("audio/ding.mp3")
     five_sec_pause = AudioSegment.silent(duration=5000)
@@ -97,12 +99,16 @@ def createTossupAudio(tossup):
 
     # concatenating all audio together for each tossup and adding onto the packet
     tossupAudio = tossupStartAudio + powermarkAudio + tossupEndAudio + five_sec_pause
+    tossupAudio.export("currTossup.mp3", format="mp3")
 
-def finalizeTossup(tossup):
+def finalizeTossup():
     global tossupAnswer, tossupAnswer_sanitized
+
+    if (isVerbose): print("finalizeTossup called")
+
     tossupAnswer = nextTossupAnswer
     tossupAnswer_sanitized = nextTossupAnswer_sanitized
-    tossupAudio.export("currTossup.mp3", format="mp3")
+    if (isVerbose): print("set tossupAnswer to ", tossupAnswer)
     if (isVerbose): print("tossup exported as mp3")
 
 def checkAnswer(answerline, givenAnswer):
@@ -126,66 +132,71 @@ def displayAnswer():
 
 timeoutDuration = 100
 
-createTossupAudio(getTossup(diffs))
+if (__name__ == "__main__"):
+    tossup = getTossup(diffs)
+    p = multiprocessing.Process(target=createTossupAudio, args=(tossup, ))
+    p.start()
 
-# Event Loop to process "events" and get the "values" of the inputs
-while True:
+    # Event Loop to process "events" and get the "values" of the inputs
+    while (True):
 
-    event, values = window.read(timeout = timeoutDuration)
+        event, values = window.read(timeout = timeoutDuration)
 
-    if (not tossupPlaying()):
-        displayAnswer()
-        gameStatus = PRE_QUESTION
-
-    # play question button
-    if (event == "Play Question" and gameStatus == PRE_QUESTION):
-        if (isVerbose): print("(button) play question registered")
-        changeInstruction("Enter answer:")
-        window["answer"].update("")
-        # tossupToMP3(getTossup(diffs))
-        finalizeTossup(tossupAudio)
-        mixer.music.load("currTossup.mp3")
-        gameStatus = MID_QUESTION
-        mixer.music.play(0)
-        # thread = Thread(target=createTossupAudio(getTossup(diffs)))
-        # thread.start()
-        createTossupAudio(getTossup(diffs))
-
-    # buzz button
-    if (event == "Buzz" and gameStatus == MID_QUESTION):
-        if (isVerbose): print("(button) buzz registered")
-        gameStatus = BUZZED
-        mixer.music.pause()
-
-    # submit button
-    if (event == "Submit" and gameStatus == BUZZED and len(values) > 0):
-        if (isVerbose): print("(button) submit registered")
-        window["input"].update("")
-        responseEvaluation = checkAnswer(tossupAnswer, values["input"])
-        if (isVerbose): jprint(responseEvaluation)
-        # correct response
-        if (responseEvaluation["directive"] == "accept"):
-            if (isVerbose): print("correct answer provided")
-            correctSound.play()
-            changeInstruction("Correct!")
-            window["answer"].update("Answer: " + tossupAnswer_sanitized)
+        if (not tossupPlaying()):
+            displayAnswer()
             gameStatus = PRE_QUESTION
-        # incorrect response
-        if (responseEvaluation["directive"] == "reject"):
-            if (isVerbose): print("incorrect answer")
-            incorrectSound.play()
-            changeInstruction("Enter answer:")
-            gameStatus = MID_QUESTION
-            mixer.music.unpause()
-        # prompted response
-        if (responseEvaluation["directive"] == "prompt"):
-            try:
-                if (isVerbose): print("promted with direction ", responseEvaluation["directedPrompt"])
-                changeInstruction("Prompt: " + responseEvaluation["directedPrompt"])
-            except:
-                if (isVerbose): print("prompted")
-                changeInstruction("Prompt:")
 
-    # close reader
-    if event == sg.WIN_CLOSED or event == 'Quit':
-        break
+        # play question button
+        if (event == "Play Question" and gameStatus == PRE_QUESTION):
+            if (isVerbose): print("(button) play question registered")
+            changeInstruction("Enter answer:")
+            window["answer"].update("")
+            # tossupToMP3(getTossup(diffs))
+            p.join()
+            finalizeTossup()
+            mixer.music.load("currTossup.mp3")
+            gameStatus = MID_QUESTION
+            mixer.music.play(0)
+            # createTossupAudio(getTossup(diffs))
+            tossup = getTossup(diffs)
+            p = multiprocessing.Process(target=createTossupAudio, args=(tossup, ))
+            p.start()
+
+        # buzz button
+        if (event == "Buzz" and gameStatus == MID_QUESTION):
+            if (isVerbose): print("(button) buzz registered")
+            gameStatus = BUZZED
+            mixer.music.pause()
+
+        # submit button
+        if (event == "Submit" and gameStatus == BUZZED and len(values) > 0):
+            if (isVerbose): print("(button) submit registered")
+            window["input"].update("")
+            responseEvaluation = checkAnswer(tossupAnswer, values["input"])
+            if (isVerbose): jprint(responseEvaluation)
+            # correct response
+            if (responseEvaluation["directive"] == "accept"):
+                if (isVerbose): print("correct answer provided")
+                correctSound.play()
+                changeInstruction("Correct!")
+                window["answer"].update("Answer: " + tossupAnswer_sanitized)
+                gameStatus = PRE_QUESTION
+            # incorrect response
+            if (responseEvaluation["directive"] == "reject"):
+                if (isVerbose): print("incorrect answer")
+                incorrectSound.play()
+                changeInstruction("Enter answer:")
+                gameStatus = MID_QUESTION
+                mixer.music.unpause()
+            # prompted response
+            if (responseEvaluation["directive"] == "prompt"):
+                try:
+                    if (isVerbose): print("promted with direction ", responseEvaluation["directedPrompt"])
+                    changeInstruction("Prompt: " + responseEvaluation["directedPrompt"])
+                except:
+                    if (isVerbose): print("prompted")
+                    changeInstruction("Prompt:")
+
+        # close reader
+        if event == sg.WIN_CLOSED or event == 'Quit':
+            break
